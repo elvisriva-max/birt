@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Angry Birds - Programming LMS</title>
+  <style>
+    :root {
+      --bg-color: #1a252f;
+      --panel-bg: #ecf0f1;
+      --primary: #27ae60;
+      --primary-hover: #219150;
+      --danger: #c0392b;
+      --tile-size: 45px;
+      --grid-size: 8;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: #333;
+      margin: 0;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      user-select: none;
+    }
+
+    .header {
+      width: 100%;
+      max-width: 1000px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #34495e;
+      padding: 15px 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      color: white;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    }
+
+    .level-info h2 { margin: 0 0 5px 0; font-size: 1.2rem; color: #f1c40f; }
+    .level-info p { margin: 0; font-size: 0.95rem; }
+
+    .timer-container {
+      background: #c0392b;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 1.5rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+      border: 2px solid #e74c3c;
+    }
+    
+    .timer-warning { background: #e67e22; border-color: #d35400; }
+    .timer-danger { background: #c0392b; animation: pulse 1s infinite; }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    .main-workspace {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+      width: 100%;
+      max-width: 1000px;
+    }
+
+    /* --- BOARD CSS --- */
+    .board-wrapper {
+      background-color: #7cbd3a;
+      padding: 12px;
+      border-radius: 12px;
+      border: 5px solid #4d7a22;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+    }
+
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(var(--grid-size), var(--tile-size));
+      grid-template-rows: repeat(var(--grid-size), var(--tile-size));
+      gap: 2px;
+      background-color: #6ba331;
+      padding: 2px;
+    }
+
+    .cell {
+      width: var(--tile-size);
+      height: var(--tile-size);
+      background-color: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      position: relative;
+    }
+
+    .cell.obstacle { background-color: #8d6e63; border: 2px solid #5d4037; }
+    .cell.tnt { background-color: #e53935; border: 2px solid #b71c1c; color: white; font-weight: bold; font-size: 12px; }
+    .cell.tnt::after { content: "TNT"; }
+
+    #bird, #pig {
+      width: 80%;
+      height: 80%;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      transition: all 0.25s ease-in-out;
+      z-index: 2;
+    }
+    #bird { background-color: #e74c3c; box-shadow: 0 3px 5px rgba(0,0,0,0.5); }
+    #pig { background-color: #2ecc71; box-shadow: 0 3px 5px rgba(0,0,0,0.5); }
+
+    /* --- PANELS --- */
+    .panel {
+      background: var(--panel-bg);
+      border-radius: 12px;
+      padding: 15px;
+      flex: 1;
+      min-width: 250px;
+      max-width: 320px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+    }
+
+    .panel h3 { margin-top: 0; border-bottom: 2px solid #bdc3c7; padding-bottom: 10px; color: #2c3e50; }
+
+    .block-palette { display: flex; flex-direction: column; gap: 10px; }
+
+    .drop-zone {
+      flex-grow: 1;
+      border: 3px dashed #bdc3c7;
+      border-radius: 8px;
+      padding: 10px;
+      min-height: 850px;
+      background-color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      max-height: 350px;
+    }
+
+    .block {
+      padding: 12px;
+      color: white;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: grab;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    .block:active { cursor: grabbing; }
+
+    .block-UP    { background-color: #2980b9; }
+    .block-DOWN  { background-color: #8e44ad; }
+    .block-LEFT  { background-color: #d35400; }
+    .block-RIGHT { background-color: #16a085; }
+
+    .btn-remove {
+      background: rgba(0,0,0,0.3);
+      border: none;
+      color: white;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      cursor: pointer;
+      display: none;
+    }
+    .drop-zone .block .btn-remove { display: flex; align-items: center; justify-content: center; }
+
+    .controls { display: flex; gap: 10px; margin-top: 15px; }
+    .btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      color: white;
+      transition: opacity 0.2s;
+    }
+    .btn:hover { opacity: 0.9; }
+    .btn-run { background-color: var(--primary); }
+    .btn-reset { background-color: var(--danger); }
+
+    #status-msg {
+      margin-top: 15px;
+      font-weight: bold;
+      text-align: center;
+      min-height: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .header { flex-direction: column; gap: 15px; text-align: center; }
+      :root { --tile-size: 38px; }
+      .main-workspace { flex-direction: column; align-items: center; }
+      .panel { width: 100%; max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="level-info">
+      <h2 id="level-title">Cargando Nivel...</h2>
+      <p id="level-desc">Prepara tus bloques.</p>
+    </div>
+    <div class="timer-container" id="timer-display">04:00</div>
+  </div>
+
+  <div class="main-workspace">
+    <!-- Tablero 8x8 -->
+    <div class="board-wrapper">
+      <div id="grid"></div>
+    </div>
+
+    <!-- Bloques -->
+    <div class="panel">
+      <h3>Caja de Herramientas</h3>
+      <div class="block-palette">
+        <div class="block block-UP" draggable="true" data-dir="UP">⬆️ Mover Arriba</div>
+        <div class="block block-DOWN" draggable="true" data-dir="DOWN">⬇️ Mover Abajo</div>
+        <div class="block block-LEFT" draggable="true" data-dir="LEFT">⬅️ Mover Izquierda</div>
+        <div class="block block-RIGHT" draggable="true" data-dir="RIGHT">➡️ Mover Derecha</div>
+      </div>
+    </div>
+
+    <!-- Área de Programación -->
+    <div class="panel">
+      <h3>Secuencia de Código</h3>
+      <div class="drop-zone" id="drop-zone"></div>
+      <div class="controls">
+        <button class="btn btn-run" id="btn-run">▶ Ejecutar</button>
+        <button class="btn btn-reset" id="btn-reset">🔄 Reiniciar</button>
+      </div>
+      <div id="status-msg"></div>
+    </div>
+  </div>
+
+  <script>
+    // ==========================================
+    // 1. MOTOR DE AUDIO (Web Audio API)
+    // ==========================================
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+
+    function initAudio() {
+      if (!audioCtx) audioCtx = new AudioContext();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playTone(freq, type, duration, vol=0.1) {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }
+
+    const Sounds = {
+      drop: () => playTone(600, 'sine', 0.1, 0.05),
+      move: () => playTone(300, 'square', 0.15, 0.05),
+      win:  () => { 
+        playTone(400, 'triangle', 0.15, 0.1); 
+        setTimeout(() => playTone(500, 'triangle', 0.15, 0.1), 150); 
+        setTimeout(() => playTone(600, 'triangle', 0.3, 0.1), 300); 
+      },
+      lose: () => playTone(150, 'sawtooth', 0.5, 0.1)
+    };
+
+    // Inicializar audio en la primera interacción para evitar bloqueos del navegador
+    document.addEventListener('mousedown', initAudio, { once: true });
+    document.addEventListener('touchstart', initAudio, { once: true });
+
+    // ==========================================
+    // 2. CONFIGURACIÓN DEL JUEGO (8x8)
+    // ==========================================
+    const GRID_SIZE = 8;
+    const TIME_LIMIT = 240; // 4 minutos en segundos
+    let currentLevelIdx = 0;
+    let birdPos = {x: 0, y: 0};
+    let isExecuting = false;
+    
+    // Variables del temporizador
+    let timeLeft = TIME_LIMIT;
+    let timerInterval;
+
+    // 6 Niveles en cuadrícula 8x8 (Coordenadas de 0 a 7)
+    const LEVELS = [
+      {
+        title: "Nivel 1: Línea Recta", desc: "Avanza hacia la derecha para atrapar al cerdito.",
+        bird: {x: 1, y: 4}, pig: {x: 5, y: 4}, tnt: [], obs: []
+      },
+      {
+        title: "Nivel 2: La Esquina", desc: "Avanza y luego baja.",
+        bird: {x: 2, y: 2}, pig: {x: 6, y: 6}, tnt: [], obs: []
+      },
+      {
+        title: "Nivel 3: El Muro", desc: "Rodea el muro de piedra.",
+        bird: {x: 1, y: 3}, pig: {x: 6, y: 3},
+        tnt: [], obs: [{x: 4, y: 2}, {x: 4, y: 3}, {x: 4, y: 4}]
+      },
+      {
+        title: "Nivel 4: Cuidado con la TNT", desc: "Esquiva los explosivos.",
+        bird: {x: 1, y: 1}, pig: {x: 6, y: 6},
+        tnt: [{x: 3, y: 1}, {x: 3, y: 2}, {x: 4, y: 5}, {x: 5, y: 5}], 
+        obs: [{x: 1, y: 3}, {x: 6, y: 3}]
+      },
+      {
+        title: "Nivel 5: Laberinto", desc: "Encuentra el camino en zig-zag.",
+        bird: {x: 0, y: 7}, pig: {x: 7, y: 0},
+        tnt: [{x: 3, y: 4}, {x: 4, y: 4}],
+        obs: [{x: 0, y: 5}, {x: 1, y: 5}, {x: 2, y: 5}, {x: 3, y: 5}, {x: 4, y: 1}, {x: 5, y: 1}, {x: 6, y: 1}, {x: 7, y: 1}]
+      },
+      {
+        title: "Nivel 6: Desafío Final", desc: "Aplica todo. Cuidado con el tiempo.",
+        bird: {x: 0, y: 0}, pig: {x: 7, y: 7},
+        tnt: [{x: 1, y: 1}, {x: 2, y: 2}, {x: 3, y: 3}, {x: 4, y: 4}, {x: 5, y: 5}],
+        obs: [{x: 0, y: 2}, {x: 1, y: 3}, {x: 6, y: 1}, {x: 7, y: 2}, {x: 1, y: 6}, {x: 2, y: 7}]
+      }
+    ];
+
+    const gridEl = document.getElementById('grid');
+    const dropZone = document.getElementById('drop-zone');
+    const statusMsg = document.getElementById('status-msg');
+    const timerDisplay = document.getElementById('timer-display');
+
+    // ==========================================
+    // 3. TEMPORIZADOR
+    // ==========================================
+    function updateTimerDisplay() {
+      const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+      const s = (timeLeft % 60).toString().padStart(2, '0');
+      timerDisplay.innerText = `${m}:${s}`;
+      
+      timerDisplay.className = 'timer-container';
+      if (timeLeft <= 30) timerDisplay.classList.add('timer-danger');
+      else if (timeLeft <= 60) timerDisplay.classList.add('timer-warning');
+    }
+
+    function startTimer() {
+      clearInterval(timerInterval);
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        if (isExecuting) return; // Pausar temporizador mientras se anima
+        timeLeft--;
+        updateTimerDisplay();
+        
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          setStatus("⏰ ¡Tiempo agotado! Reintentando nivel...", "#c0392b");
+          Sounds.lose();
+          isExecuting = true; // BloquearUI
+          setTimeout(() => loadLevel(currentLevelIdx), 2000);
+        }
+      }, 1000);
+    }
+
+    // ==========================================
+    // 4. RENDERIZADO DEL TABLERO
+    // ==========================================
+    function setStatus(text, color) {
+      statusMsg.innerText = text;
+      statusMsg.style.color = color;
+    }
+
+    function loadLevel(idx) {
+      isExecuting = false;
+      const lvl = LEVELS[idx];
+      document.getElementById('level-title').innerText = lvl.title;
+      document.getElementById('level-desc').innerText = lvl.desc;
+      
+      birdPos = { ...lvl.bird };
+      dropZone.innerHTML = '';
+      setStatus('', '#000');
+      
+      // Reset Timer
+      timeLeft = TIME_LIMIT;
+      startTimer();
+
+      renderGrid();
+    }
+
+    function renderGrid() {
+      gridEl.innerHTML = '';
+      const lvl = LEVELS[currentLevelIdx];
+
+      for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.dataset.x = c;
+          cell.dataset.y = r;
+
+          if (lvl.tnt.some(p => p.x === c && p.y === r)) cell.classList.add('tnt');
+          if (lvl.obs.some(p => p.x === c && p.y === r)) cell.classList.add('obstacle');
+
+          gridEl.appendChild(cell);
+        }
+      }
+      renderEntities();
+    }
+
+    function renderEntities() {
+      document.getElementById('bird')?.remove();
+      document.getElementById('pig')?.remove();
+
+      const lvl = LEVELS[currentLevelIdx];
+      const getCell = (x, y) => document.querySelector(`.cell[data-x="${x}"][data-y="${y}"]`);
+      
+      const bCell = getCell(birdPos.x, birdPos.y);
+      if (bCell) {
+        const bird = document.createElement('div');
+        bird.id = 'bird';
+        bird.innerText = '😡';
+        bCell.appendChild(bird);
+      }
+
+      const pCell = getCell(lvl.pig.x, lvl.pig.y);
+      if (pCell) {
+        const pig = document.createElement('div');
+        pig.id = 'pig';
+        pig.innerText = '🐷';
+        pCell.appendChild(pig);
+      }
+    }
+
+    // ==========================================
+    // 5. DRAG & DROP NATIVO
+    // ==========================================
+    document.querySelectorAll('.block-palette .block').forEach(block => {
+      block.addEventListener('dragstart', (e) => {
+        initAudio();
+        e.dataTransfer.setData('dir', block.dataset.dir);
+        e.dataTransfer.setData('text', block.innerText);
+      });
+    });
+
+    dropZone.addEventListener('dragover', (e) => e.preventDefault());
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      const dir = e.dataTransfer.getData('dir');
+      const text = e.dataTransfer.getData('text');
+
+      if (dir && !isExecuting) {
+        Sounds.drop(); // Sonido al soltar el bloque
+        
+        const newBlock = document.createElement('div');
+        newBlock.className = `block block-${dir}`;
+        newBlock.dataset.dir = dir;
+        newBlock.innerHTML = `<span>${text}</span> <button class="btn-remove">✕</button>`;
+        
+        newBlock.querySelector('.btn-remove').onclick = () => {
+          if (!isExecuting) newBlock.remove();
+        };
+
+        dropZone.appendChild(newBlock);
+      }
+    });
+
+    // ==========================================
+    // 6. LÓGICA DE EJECUCIÓN
+    // ==========================================
+    document.getElementById('btn-run').addEventListener('click', async () => {
+      if (isExecuting) return;
+      initAudio(); // Asegurar contexto de audio
+
+      const blocks = Array.from(dropZone.children);
+      if (blocks.length === 0) {
+        setStatus("¡Arrastra comandos al área de código!", "#e67e22");
+        return;
+      }
+
+      isExecuting = true;
+      setStatus("Ejecutando...", "#2980b9");
+      const lvl = LEVELS[currentLevelIdx];
+
+      for (let block of blocks) {
+        const dir = block.dataset.dir;
+        
+        // Movimiento matemático
+        if (dir === 'UP') birdPos.y = Math.max(0, birdPos.y - 1);
+        if (dir === 'DOWN') birdPos.y = Math.min(GRID_SIZE - 1, birdPos.y + 1);
+        if (dir === 'LEFT') birdPos.x = Math.max(0, birdPos.x - 1);
+        if (dir === 'RIGHT') birdPos.x = Math.min(GRID_SIZE - 1, birdPos.x + 1);
+
+        renderEntities();
+        Sounds.move(); // Sonido al moverse
+        
+        await new Promise(r => setTimeout(r, 400));
+
+        // Validación de Choques
+        const hitTNT = lvl.tnt.some(p => p.x === birdPos.x && p.y === birdPos.y);
+        const hitObs = lvl.obs.some(p => p.x === birdPos.x && p.y === birdPos.y);
+
+        if (hitTNT || hitObs) {
+          Sounds.lose();
+          setStatus("💥 ¡Chocaste! Intenta otra ruta.", "#c0392b");
+          document.getElementById('bird').innerText = '💥';
+          isExecuting = false;
+          return;
+        }
+
+        // Validación de Victoria
+        if (birdPos.x === lvl.pig.x && birdPos.y === lvl.pig.y) {
+          document.getElementById('pig').innerText = '💥';
+          Sounds.win();
+          
+          if (currentLevelIdx < LEVELS.length - 1) {
+            setStatus("🎉 ¡Nivel Superado! Avanzando...", "#27ae60");
+            setTimeout(() => {
+              currentLevelIdx++;
+              loadLevel(currentLevelIdx);
+            }, 2000);
+          } else {
+            setStatus("🏆 ¡Felicidades! Has completado el juego.", "#f39c12");
+            clearInterval(timerInterval);
+          }
+          return;
+        }
+      }
+
+      // Finalizó el código pero no llegó
+      setStatus("❌ Te faltaron bloques para llegar.", "#d35400");
+      Sounds.lose();
+      isExecuting = false;
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      if (isExecuting) return;
+      loadLevel(currentLevelIdx);
+    });
+
+    // Iniciar el juego
+    loadLevel(currentLevelIdx);
+  </script>
+</body>
+</html>
