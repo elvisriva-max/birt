@@ -2,8 +2,8 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Angry Birds - Programming LMS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Angry Birds - LMS Móvil</title>
   <style>
     :root {
       --bg-color: #1a252f;
@@ -11,52 +11,55 @@
       --primary: #27ae60;
       --primary-hover: #219150;
       --danger: #c0392b;
-      --tile-size: 45px;
+      --tile-size: clamp(32px, 10vw, 48px);
       --grid-size: 8;
     }
 
     * {
       box-sizing: border-box;
       font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      touch-action: manipulation;
     }
 
     body {
       background-color: var(--bg-color);
       color: #333;
       margin: 0;
-      padding: 15px;
+      padding: 10px;
       display: flex;
       flex-direction: column;
       align-items: center;
       min-height: 100vh;
       user-select: none;
+      -webkit-user-select: none;
     }
 
     .header {
       width: 100%;
-      max-width: 1000px;
+      max-width: 800px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       background: #34495e;
-      padding: 15px 20px;
+      padding: 10px 15px;
       border-radius: 12px;
-      margin-bottom: 20px;
+      margin-bottom: 10px;
       color: white;
       box-shadow: 0 4px 6px rgba(0,0,0,0.3);
     }
 
-    .level-info h2 { margin: 0 0 5px 0; font-size: 1.2rem; color: #f1c40f; }
-    .level-info p { margin: 0; font-size: 0.95rem; }
+    .level-info h2 { margin: 0 0 2px 0; font-size: 1.05rem; color: #f1c40f; }
+    .level-info p { margin: 0; font-size: 0.8rem; opacity: 0.9; }
 
     .timer-container {
       background: #c0392b;
-      padding: 10px 20px;
+      padding: 6px 12px;
       border-radius: 8px;
-      font-size: 1.5rem;
+      font-size: 1.2rem;
       font-weight: bold;
-      letter-spacing: 2px;
+      letter-spacing: 1px;
       border: 2px solid #e74c3c;
+      white-space: nowrap;
     }
     
     .timer-warning { background: #e67e22; border-color: #d35400; }
@@ -68,22 +71,73 @@
       100% { transform: scale(1); }
     }
 
+    /* BARRA DE CONTROLES SUPERIOR */
+    .top-controls-bar {
+      width: 100%;
+      max-width: 800px;
+      background: var(--panel-bg);
+      padding: 10px 12px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+
+    .controls { display: flex; gap: 10px; width: 100%; }
+    
+    .btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 1rem;
+      cursor: pointer;
+      color: white;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn:active { transform: translateY(1px); }
+    .btn-run { background-color: var(--primary); }
+    .btn-reset { background-color: var(--danger); }
+
+    #status-msg {
+      font-weight: bold;
+      text-align: center;
+      min-height: 20px;
+      font-size: 0.9rem;
+    }
+
     .main-workspace {
       display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-      justify-content: center;
+      gap: 12px;
+      flex-direction: column;
+      align-items: center;
       width: 100%;
-      max-width: 1000px;
+      max-width: 800px;
+    }
+
+    @media (min-width: 768px) {
+      .main-workspace {
+        flex-direction: row;
+        align-items: flex-start;
+        justify-content: center;
+      }
     }
 
     /* --- BOARD CSS --- */
     .board-wrapper {
       background-color: #7cbd3a;
-      padding: 12px;
+      padding: 8px;
       border-radius: 12px;
-      border: 5px solid #4d7a22;
-      box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+      border: 4px solid #4d7a22;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+      touch-action: none;
     }
 
     #grid {
@@ -103,128 +157,162 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 24px;
+      font-size: calc(var(--tile-size) * 0.55);
       position: relative;
     }
 
     .cell.obstacle { background-color: #8d6e63; border: 2px solid #5d4037; }
-    .cell.tnt { background-color: #e53935; border: 2px solid #b71c1c; color: white; font-weight: bold; font-size: 12px; }
+    .cell.tnt { background-color: #e53935; border: 2px solid #b71c1c; color: white; font-weight: bold; font-size: calc(var(--tile-size) * 0.28); }
     .cell.tnt::after { content: "TNT"; }
 
     #bird, #pig {
-      width: 80%;
-      height: 80%;
+      width: 85%;
+      height: 85%;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 26px;
       transition: all 0.25s ease-in-out;
       z-index: 2;
     }
-    #bird { background-color: #e74c3c; box-shadow: 0 3px 5px rgba(0,0,0,0.5); }
-    #pig { background-color: #2ecc71; box-shadow: 0 3px 5px rgba(0,0,0,0.5); }
+    #bird { background-color: #e74c3c; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    #pig { background-color: #2ecc71; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
 
     /* --- PANELS --- */
     .panel {
       background: var(--panel-bg);
       border-radius: 12px;
-      padding: 15px;
-      flex: 1;
-      min-width: 250px;
-      max-width: 320px;
+      padding: 12px;
+      width: 100%;
       display: flex;
       flex-direction: column;
-      box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
     }
 
-    .panel h3 { margin-top: 0; border-bottom: 2px solid #bdc3c7; padding-bottom: 10px; color: #2c3e50; }
+    .panel h3 { 
+      margin: 0 0 8px 0; 
+      border-bottom: 2px solid #bdc3c7; 
+      padding-bottom: 4px; 
+      color: #2c3e50; 
+      font-size: 0.95rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-    .block-palette { display: flex; flex-direction: column; gap: 10px; }
+    .block-palette { 
+      display: grid; 
+      grid-template-columns: repeat(2, 1fr); 
+      gap: 8px; 
+    }
+
+    @media (min-width: 480px) {
+      .block-palette { grid-template-columns: repeat(4, 1fr); }
+    }
 
     .drop-zone {
-      flex-grow: 1;
-      border: 3px dashed #bdc3c7;
+      min-height: 140px;
+      max-height: 220px;
+      border: 2px dashed #bdc3c7;
       border-radius: 8px;
-      padding: 10px;
-      min-height: 450px;
+      padding: 8px;
       background-color: #ffffff;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
       overflow-y: auto;
-      max-height: 350px;
     }
 
     .block {
-      padding: 12px;
+      padding: 10px 12px;
       color: white;
       font-weight: bold;
-      border-radius: 6px;
-      cursor: grab;
+      border-radius: 8px;
+      cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: space-between;
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      font-size: 0.9rem;
+      min-height: 44px;
     }
-    .block:active { cursor: grabbing; }
+
+    .block.executing {
+      transform: scale(1.02);
+      outline: 3px solid #f1c40f;
+      box-shadow: 0 0 10px #f1c40f;
+    }
 
     .block-UP    { background-color: #2980b9; }
     .block-DOWN  { background-color: #8e44ad; }
     .block-LEFT  { background-color: #d35400; }
     .block-RIGHT { background-color: #16a085; }
 
+    .repeat-control {
+      display: none;
+      align-items: center;
+      gap: 4px;
+      background: rgba(0,0,0,0.25);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+    }
+
+    .drop-zone .repeat-control { display: flex; }
+
+    .repeat-select {
+      background: #ffffff;
+      color: #333;
+      border: none;
+      border-radius: 4px;
+      padding: 4px;
+      font-weight: bold;
+      font-size: 0.9rem;
+    }
+
     .btn-remove {
       background: rgba(0,0,0,0.3);
       border: none;
       color: white;
       border-radius: 50%;
-      width: 24px;
-      height: 24px;
+      width: 28px;
+      height: 28px;
       cursor: pointer;
       display: none;
-    }
-    .drop-zone .block .btn-remove { display: flex; align-items: center; justify-content: center; }
-
-    .controls { display: flex; gap: 10px; margin-top: 15px; }
-    .btn {
-      flex: 1;
-      padding: 12px;
-      border: none;
-      border-radius: 6px;
       font-weight: bold;
-      font-size: 1rem;
-      cursor: pointer;
-      color: white;
-      transition: opacity 0.2s;
     }
-    .btn:hover { opacity: 0.9; }
-    .btn-run { background-color: var(--primary); }
-    .btn-reset { background-color: var(--danger); }
-
-    #status-msg {
-      margin-top: 15px;
-      font-weight: bold;
-      text-align: center;
-      min-height: 24px;
+    
+    .drop-zone .block .btn-remove { 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
     }
 
-    @media (max-width: 768px) {
-      .header { flex-direction: column; gap: 15px; text-align: center; }
-      :root { --tile-size: 38px; }
-      .main-workspace { flex-direction: column; align-items: center; }
-      .panel { width: 100%; max-width: 100%; }
+    .hint-text {
+      font-size: 0.75rem;
+      color: #7f8c8d;
+      font-weight: normal;
     }
   </style>
 </head>
 <body>
 
+  <!-- Encabezado de Nivel -->
   <div class="header">
     <div class="level-info">
       <h2 id="level-title">Cargando Nivel...</h2>
-      <p id="level-desc">Prepara tus bloques.</p>
+      <p id="level-desc">Crea tu secuencia para llegar al cerdito.</p>
     </div>
     <div class="timer-container" id="timer-display">04:00</div>
+  </div>
+
+  <!-- Botones de Control Superiores -->
+  <div class="top-controls-bar">
+    <div class="controls">
+      <button class="btn btn-run" id="btn-run">▶ Ejecutar</button>
+      <button class="btn btn-reset" id="btn-reset">🔄 Reiniciar</button>
+    </div>
+    <div id="status-msg"></div>
   </div>
 
   <div class="main-workspace">
@@ -233,14 +321,25 @@
       <div id="grid"></div>
     </div>
 
-    <!-- Bloques -->
+    <!-- Bloques / Paleta -->
     <div class="panel">
-      <h3>Caja de Herramientas</h3>
-      <div class="block-palette">
-        <div class="block block-UP" draggable="true" data-dir="UP">⬆️ Mover Arriba</div>
-        <div class="block block-DOWN" draggable="true" data-dir="DOWN">⬇️ Mover Abajo</div>
-        <div class="block block-LEFT" draggable="true" data-dir="LEFT">⬅️ Mover Izquierda</div>
-        <div class="block block-RIGHT" draggable="true" data-dir="RIGHT">➡️ Mover Derecha</div>
+      <h3>
+        <span>Caja de Herramientas</span>
+        <span class="hint-text">Toca para agregar ➕</span>
+      </h3>
+      <div class="block-palette" id="block-palette">
+        <div class="block block-UP" data-dir="UP">
+          <span>⬆️ Arriba</span>
+        </div>
+        <div class="block block-DOWN" data-dir="DOWN">
+          <span>⬇️ Abajo</span>
+        </div>
+        <div class="block block-LEFT" data-dir="LEFT">
+          <span>⬅️ Izquierda</span>
+        </div>
+        <div class="block block-RIGHT" data-dir="RIGHT">
+          <span>➡️ Derecha</span>
+        </div>
       </div>
     </div>
 
@@ -248,11 +347,6 @@
     <div class="panel">
       <h3>Secuencia de Código</h3>
       <div class="drop-zone" id="drop-zone"></div>
-      <div class="controls">
-        <button class="btn btn-run" id="btn-run">▶ Ejecutar</button>
-        <button class="btn btn-reset" id="btn-reset">🔄 Reiniciar</button>
-      </div>
-      <div id="status-msg"></div>
     </div>
   </div>
 
@@ -270,21 +364,23 @@
 
     function playTone(freq, type, duration, vol=0.1) {
       if (!audioCtx) return;
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = type;
-      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-      gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + duration);
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch(e) {}
     }
 
     const Sounds = {
       drop: () => playTone(600, 'sine', 0.1, 0.05),
-      move: () => playTone(300, 'square', 0.15, 0.05),
+      move: () => playTone(300, 'square', 0.12, 0.05),
       win:  () => { 
         playTone(400, 'triangle', 0.15, 0.1); 
         setTimeout(() => playTone(500, 'triangle', 0.15, 0.1), 150); 
@@ -293,55 +389,52 @@
       lose: () => playTone(150, 'sawtooth', 0.5, 0.1)
     };
 
-    // Inicializar audio en la primera interacción para evitar bloqueos del navegador
-    document.addEventListener('mousedown', initAudio, { once: true });
     document.addEventListener('touchstart', initAudio, { once: true });
+    document.addEventListener('click', initAudio, { once: true });
 
     // ==========================================
-    // 2. CONFIGURACIÓN DEL JUEGO (8x8)
+    // 2. CONFIGURACIÓN DEL JUEGO
     // ==========================================
     const GRID_SIZE = 8;
-    const TIME_LIMIT = 240; // 4 minutos en segundos
+    const TIME_LIMIT = 240; 
     let currentLevelIdx = 0;
     let birdPos = {x: 0, y: 0};
     let isExecuting = false;
     
-    // Variables del temporizador
     let timeLeft = TIME_LIMIT;
     let timerInterval;
 
-    // 6 Niveles en cuadrícula 8x8 (Coordenadas de 0 a 7)
     const LEVELS = [
       {
-        title: "Nivel 1: Línea Recta", desc: "Avanza hacia la derecha para atrapar al cerdito.",
-        bird: {x: 1, y: 4}, pig: {x: 5, y: 4}, tnt: [], obs: []
+        title: "Nivel 1: Repetición Simple", desc: "Usa el selector para repetir el paso a la derecha.",
+        bird: {x: 0, y: 3}, pig: {x: 6, y: 3}, tnt: [], obs: []
       },
       {
-        title: "Nivel 2: La Esquina", desc: "Avanza y luego baja.",
-        bird: {x: 2, y: 2}, pig: {x: 6, y: 6}, tnt: [], obs: []
+        title: "Nivel 2: Esquina Inteligente", desc: "Avanza en horizontal y luego en vertical multiplicando pasos.",
+        bird: {x: 1, y: 1}, pig: {x: 6, y: 6}, tnt: [], obs: []
       },
       {
-        title: "Nivel 3: El Muro", desc: "Rodea el muro de piedra.",
-        bird: {x: 1, y: 3}, pig: {x: 6, y: 3},
-        tnt: [], obs: [{x: 4, y: 2}, {x: 4, y: 3}, {x: 4, y: 4}]
+        title: "Nivel 3: Esquivar la Pared", desc: "Usa bucles en cada bloque para rodear el muro.",
+        bird: {x: 1, y: 4}, pig: {x: 6, y: 4},
+        tnt: [], obs: [{x: 4, y: 2}, {x: 4, y: 3}, {x: 4, y: 4}, {x: 4, y: 5}]
       },
       {
-        title: "Nivel 4: Cuidado con la TNT", desc: "Esquiva los explosivos.",
-        bird: {x: 1, y: 1}, pig: {x: 6, y: 6},
-        tnt: [{x: 3, y: 1}, {x: 3, y: 2}, {x: 4, y: 5}, {x: 5, y: 5}], 
-        obs: [{x: 1, y: 3}, {x: 6, y: 3}]
+        title: "Nivel 4: Campo con TNT", desc: "Calcula los pasos exactos para pasar entre explosivos.",
+        bird: {x: 0, y: 2}, pig: {x: 7, y: 5},
+        tnt: [{x: 3, y: 2}, {x: 3, y: 3}, {x: 4, y: 5}], 
+        obs: [{x: 1, y: 4}, {x: 6, y: 2}]
       },
       {
-        title: "Nivel 5: Laberinto", desc: "Encuentra el camino en zig-zag.",
+        title: "Nivel 5: Laberinto de Pasillos", desc: "Sincroniza tus direcciones y contadores.",
         bird: {x: 0, y: 7}, pig: {x: 7, y: 0},
-        tnt: [{x: 3, y: 4}, {x: 4, y: 4}],
-        obs: [{x: 0, y: 5}, {x: 1, y: 5}, {x: 2, y: 5}, {x: 3, y: 5}, {x: 4, y: 1}, {x: 5, y: 1}, {x: 6, y: 1}, {x: 7, y: 1}]
+        tnt: [{x: 2, y: 4}, {x: 5, y: 3}],
+        obs: [{x: 0, y: 5}, {x: 1, y: 5}, {x: 2, y: 5}, {x: 3, y: 5}, {x: 4, y: 2}, {x: 5, y: 2}, {x: 6, y: 2}, {x: 7, y: 2}]
       },
       {
-        title: "Nivel 6: Desafío Final", desc: "Aplica todo. Cuidado con el tiempo.",
+        title: "Nivel 6: Desafío Algorítmico", desc: "Resuelve el tablero completo optimizando con repeticiones.",
         bird: {x: 0, y: 0}, pig: {x: 7, y: 7},
-        tnt: [{x: 1, y: 1}, {x: 2, y: 2}, {x: 3, y: 3}, {x: 4, y: 4}, {x: 5, y: 5}],
-        obs: [{x: 0, y: 2}, {x: 1, y: 3}, {x: 6, y: 1}, {x: 7, y: 2}, {x: 1, y: 6}, {x: 2, y: 7}]
+        tnt: [{x: 2, y: 0}, {x: 3, y: 3}, {x: 5, y: 5}],
+        obs: [{x: 0, y: 3}, {x: 1, y: 3}, {x: 2, y: 3}, {x: 5, y: 2}, {x: 7, y: 4}, {x: 3, y: 7}]
       }
     ];
 
@@ -367,7 +460,7 @@
       clearInterval(timerInterval);
       updateTimerDisplay();
       timerInterval = setInterval(() => {
-        if (isExecuting) return; // Pausar temporizador mientras se anima
+        if (isExecuting) return; 
         timeLeft--;
         updateTimerDisplay();
         
@@ -375,14 +468,14 @@
           clearInterval(timerInterval);
           setStatus("⏰ ¡Tiempo agotado! Reintentando nivel...", "#c0392b");
           Sounds.lose();
-          isExecuting = true; // BloquearUI
+          isExecuting = true;
           setTimeout(() => loadLevel(currentLevelIdx), 2000);
         }
       }, 1000);
     }
 
     // ==========================================
-    // 4. RENDERIZADO DEL TABLERO
+    // 4. RENDERIZADO Y CONTROL DE NIVEL
     // ==========================================
     function setStatus(text, color) {
       statusMsg.innerText = text;
@@ -399,7 +492,6 @@
       dropZone.innerHTML = '';
       setStatus('', '#000');
       
-      // Reset Timer
       timeLeft = TIME_LIMIT;
       startTimer();
 
@@ -451,103 +543,138 @@
     }
 
     // ==========================================
-    // 5. DRAG & DROP NATIVO
+    // 5. INTERACCIÓN MÓVIL
     // ==========================================
-    document.querySelectorAll('.block-palette .block').forEach(block => {
+    function addBlockToSequence(dir, text) {
+      if (isExecuting) return;
+      Sounds.drop();
+      
+      const newBlock = document.createElement('div');
+      newBlock.className = `block block-${dir}`;
+      newBlock.dataset.dir = dir;
+      
+      newBlock.innerHTML = `
+        <span>${text}</span>
+        <div class="repeat-control">
+          <label>Repetir:</label>
+          <select class="repeat-select">
+            <option value="1">1x</option>
+            <option value="2">2x</option>
+            <option value="3">3x</option>
+            <option value="4">4x</option>
+            <option value="5">5x</option>
+            <option value="6">6x</option>
+            <option value="7">7x</option>
+          </select>
+        </div>
+        <button class="btn-remove">✕</button>
+      `;
+      
+      newBlock.querySelector('.btn-remove').onclick = (e) => {
+        e.stopPropagation();
+        if (!isExecuting) newBlock.remove();
+      };
+
+      dropZone.appendChild(newBlock);
+      dropZone.scrollTop = dropZone.scrollHeight;
+    }
+
+    document.querySelectorAll('#block-palette .block').forEach(block => {
+      block.addEventListener('click', () => {
+        const dir = block.dataset.dir;
+        const text = block.querySelector('span').innerText;
+        addBlockToSequence(dir, text);
+      });
+    });
+
+    document.querySelectorAll('#block-palette .block').forEach(block => {
+      block.setAttribute('draggable', 'true');
       block.addEventListener('dragstart', (e) => {
         initAudio();
         e.dataTransfer.setData('dir', block.dataset.dir);
-        e.dataTransfer.setData('text', block.innerText);
+        e.dataTransfer.setData('text', block.querySelector('span').innerText);
       });
     });
 
     dropZone.addEventListener('dragover', (e) => e.preventDefault());
-
     dropZone.addEventListener('drop', (e) => {
       e.preventDefault();
       const dir = e.dataTransfer.getData('dir');
       const text = e.dataTransfer.getData('text');
-
-      if (dir && !isExecuting) {
-        Sounds.drop(); // Sonido al soltar el bloque
-        
-        const newBlock = document.createElement('div');
-        newBlock.className = `block block-${dir}`;
-        newBlock.dataset.dir = dir;
-        newBlock.innerHTML = `<span>${text}</span> <button class="btn-remove">✕</button>`;
-        
-        newBlock.querySelector('.btn-remove').onclick = () => {
-          if (!isExecuting) newBlock.remove();
-        };
-
-        dropZone.appendChild(newBlock);
-      }
+      if (dir) addBlockToSequence(dir, text);
     });
 
     // ==========================================
-    // 6. LÓGICA DE EJECUCIÓN
+    // 6. EJECUCIÓN DEL CÓDIGO
     // ==========================================
     document.getElementById('btn-run').addEventListener('click', async () => {
       if (isExecuting) return;
-      initAudio(); // Asegurar contexto de audio
+      initAudio();
 
       const blocks = Array.from(dropZone.children);
       if (blocks.length === 0) {
-        setStatus("¡Arrastra comandos al área de código!", "#e67e22");
+        setStatus("¡Toca los botones abajo para agregar comandos!", "#e67e22");
         return;
       }
 
       isExecuting = true;
-      setStatus("Ejecutando...", "#2980b9");
+      setStatus("Ejecutando secuencia...", "#2980b9");
       const lvl = LEVELS[currentLevelIdx];
 
       for (let block of blocks) {
         const dir = block.dataset.dir;
+        const repeatCount = parseInt(block.querySelector('.repeat-select').value) || 1;
         
-        // Movimiento matemático
-        if (dir === 'UP') birdPos.y = Math.max(0, birdPos.y - 1);
-        if (dir === 'DOWN') birdPos.y = Math.min(GRID_SIZE - 1, birdPos.y + 1);
-        if (dir === 'LEFT') birdPos.x = Math.max(0, birdPos.x - 1);
-        if (dir === 'RIGHT') birdPos.x = Math.min(GRID_SIZE - 1, birdPos.x + 1);
+        block.classList.add('executing');
 
-        renderEntities();
-        Sounds.move(); // Sonido al moverse
-        
-        await new Promise(r => setTimeout(r, 400));
+        for (let step = 0; step < repeatCount; step++) {
+          if (dir === 'UP') birdPos.y = Math.max(0, birdPos.y - 1);
+          if (dir === 'DOWN') birdPos.y = Math.min(GRID_SIZE - 1, birdPos.y + 1);
+          if (dir === 'LEFT') birdPos.x = Math.max(0, birdPos.x - 1);
+          if (dir === 'RIGHT') birdPos.x = Math.min(GRID_SIZE - 1, birdPos.x + 1);
 
-        // Validación de Choques
-        const hitTNT = lvl.tnt.some(p => p.x === birdPos.x && p.y === birdPos.y);
-        const hitObs = lvl.obs.some(p => p.x === birdPos.x && p.y === birdPos.y);
-
-        if (hitTNT || hitObs) {
-          Sounds.lose();
-          setStatus("💥 ¡Chocaste! Intenta otra ruta.", "#c0392b");
-          document.getElementById('bird').innerText = '💥';
-          isExecuting = false;
-          return;
-        }
-
-        // Validación de Victoria
-        if (birdPos.x === lvl.pig.x && birdPos.y === lvl.pig.y) {
-          document.getElementById('pig').innerText = '💥';
-          Sounds.win();
+          renderEntities();
+          Sounds.move();
           
-          if (currentLevelIdx < LEVELS.length - 1) {
-            setStatus("🎉 ¡Nivel Superado! Avanzando...", "#27ae60");
-            setTimeout(() => {
-              currentLevelIdx++;
-              loadLevel(currentLevelIdx);
-            }, 2000);
-          } else {
-            setStatus("🏆 ¡Felicidades! Has completado el juego.", "#f39c12");
-            clearInterval(timerInterval);
+          await new Promise(r => setTimeout(r, 300));
+
+          const hitTNT = lvl.tnt.some(p => p.x === birdPos.x && p.y === birdPos.y);
+          const hitObs = lvl.obs.some(p => p.x === birdPos.x && p.y === birdPos.y);
+
+          if (hitTNT || hitObs) {
+            Sounds.lose();
+            setStatus("💥 ¡Chocaste! Revisa tus pasos.", "#c0392b");
+            const bird = document.getElementById('bird');
+            if (bird) bird.innerText = '💥';
+            block.classList.remove('executing');
+            isExecuting = false;
+            return;
           }
-          return;
+
+          if (birdPos.x === lvl.pig.x && birdPos.y === lvl.pig.y) {
+            const pig = document.getElementById('pig');
+            if (pig) pig.innerText = '💥';
+            Sounds.win();
+            block.classList.remove('executing');
+            
+            if (currentLevelIdx < LEVELS.length - 1) {
+              setStatus("🎉 ¡Nivel Superado!", "#27ae60");
+              setTimeout(() => {
+                currentLevelIdx++;
+                loadLevel(currentLevelIdx);
+              }, 1800);
+            } else {
+              setStatus("🏆 ¡Felicidades! Completaste el juego.", "#f39c12");
+              clearInterval(timerInterval);
+            }
+            return;
+          }
         }
+
+        block.classList.remove('executing');
       }
 
-      // Finalizó el código pero no llegó
-      setStatus("❌ Te faltaron bloques para llegar.", "#d35400");
+      setStatus("❌ Faltaron pasos para llegar al cerdito.", "#d35400");
       Sounds.lose();
       isExecuting = false;
     });
